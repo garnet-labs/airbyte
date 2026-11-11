@@ -37,10 +37,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install Poetry
-        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
-        with:
-          version: 1.8.5
-          virtualenvs-in-project: true
+        run: |
+          python -m pip install --disable-pip-version-check poetry==1.8.5
+          poetry config virtualenvs.in-project true
 
       - name: Start Garnet recording
         uses: garnet-org/action@673a06d87748bec49e4d8df22d371b2a3420aba4 # v2.5.2
