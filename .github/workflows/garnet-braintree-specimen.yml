@@ -1,0 +1,61 @@
+name: Garnet Braintree Dependency Specimen
+
+on:
+  push:
+    branches:
+      - cursor/braintree-runtime-base-e982
+  pull_request:
+    branches:
+      - cursor/braintree-runtime-base-e982
+
+permissions: {}
+
+concurrency:
+  group: garnet-braintree-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-braintree-unit:
+    name: Source Braintree dependency install and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: airbyte-integrations/connectors/source-braintree
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1.4.1
+        with:
+          version: 1.8.5
+          virtualenvs-in-project: true
+
+      - name: Start Garnet recording
+        uses: garnet-org/action@673a06d87748bec49e4d8df22d371b2a3420aba4 # v2.5.2
+
+      - name: Install connector dependencies
+        run: poetry install --all-extras --no-interaction --no-ansi
+
+      - name: Run connector unit tests
+        run: |
+          if [[ -d unit_tests ]]; then
+            poetry run pytest --no-header --quiet unit_tests
+          else
+            echo "No unit_tests directory; baseline has no unit tests to run."
+          fi
+
+      - name: Let sensor settle
+        if: always()
+        run: sleep 30
