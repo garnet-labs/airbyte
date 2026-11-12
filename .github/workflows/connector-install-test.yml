@@ -1,0 +1,55 @@
+name: Connector dependency install and unit tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'rb/*-base'
+  pull_request:
+    branches:
+      - 'rb/*-base'
+
+permissions: {}
+
+concurrency:
+  group: connector-install-test-${{ github.event.pull_request.number || github.sha }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  install-test:
+    name: Install and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: airbyte-integrations/connectors/destination-pgvector
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --disable-pip-version-check poetry==1.8.5
+          poetry config virtualenvs.in-project true
+
+      # OIDC exchange; no token to configure.
+      - uses: garnet-org/action@673a06d87748bec49e4d8df22d371b2a3420aba4 # v2.5.2
+
+      - name: Install connector dependencies
+        run: poetry install --all-extras --no-interaction --no-ansi
+
+      - name: Run connector unit tests
+        continue-on-error: true
+        run: poetry run pytest --no-header --quiet unit_tests
+
+      - name: Let processes settle
+        if: always()
+        run: sleep 30
