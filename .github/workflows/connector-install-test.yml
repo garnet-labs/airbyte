@@ -40,8 +40,6 @@ jobs:
           python -m pip install --disable-pip-version-check poetry==1.8.5
           poetry config virtualenvs.in-project true
 
-      # OIDC exchange; no token to configure.
-      - uses: garnet-org/action@673a06d87748bec49e4d8df22d371b2a3420aba4 # v2.5.2
 
       - name: Install connector dependencies
         run: |
